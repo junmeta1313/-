@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>회원가입/로그인</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
+    .box { border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
+    label { display:block; margin-top: 10px; }
+    input { width:100%; padding:10px; margin-top:6px; box-sizing:border-box; }
+    button { padding:10px 12px; margin-top: 12px; margin-right: 8px; cursor:pointer; }
+    #msg { margin-top: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>회원가입 / 로그인</h1>
+
+  <div class="box">
+    <label>이메일</label>
+    <input id="email" type="email" placeholder="example@email.com" />
+
+    <label>비밀번호 (최소 6자리)</label>
+    <input id="password" type="password" placeholder="******" />
+
+    <div>
+      <button id="signup">회원가입</button>
+      <button id="login">로그인</button>
+      <button id="logout">로그아웃</button>
+    </div>
+
+    <p>상태: <b id="status">확인 중...</b></p>
+    <div id="msg"></div>
+  </div>
+
+  <script type="module">
+    // Firebase를 CDN으로 가져오는 공식 가이드 흐름(대체 설정)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBQ6nSIQqbNLXuZNiqFBgewi4cGusTykfI",
+  authDomain: "site1-b1f47.firebaseapp.com",
+  projectId: "site1-b1f47",
+  storageBucket: "site1-b1f47.firebasestorage.app",
+  messagingSenderId: "269436929092",
+  appId: "1:269436929092:web:c603f6895c2b6567cde811",
+  measurementId: "G-DQ80VH63S3"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const $ = (id) => document.getElementById(id);
+    const show = (t) => $("msg").textContent = t;
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        $("status").textContent = `로그인됨: ${user.email}`;
+        show("✅ 로그인 상태입니다.");
+      } else {
+        $("status").textContent = "로그아웃됨";
+        show("🔐 로그인해주세요.");
+      }
+    });
+
+    $("signup").addEventListener("click", async () => {
+      const email = $("email").value.trim();
+      const password = $("password").value;
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        show("✅ 회원가입 성공!");
+      } catch (e) {
+        show(`❌ 회원가입 실패: ${friendly(e)}`);
+      }
+    });
+
+    $("login").addEventListener("click", async () => {
+      const email = $("email").value.trim();
+      const password = $("password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        show("✅ 로그인 성공!");
+      } catch (e) {
+        show(`❌ 로그인 실패: ${friendly(e)}`);
+      }
+    });
+
+    $("logout").addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        show("✅ 로그아웃 완료!");
+      } catch (e) {
+        show(`❌ 로그아웃 실패: ${friendly(e)}`);
+      }
+    });
+
+    function friendly(e) {
+      const code = e?.code || "";
+      if (code.includes("auth/weak-password")) return "비밀번호가 약해요(6자리 이상).";
+      if (code.includes("auth/email-already-in-use")) return "이미 가입된 이메일이에요.";
+      if (code.includes("auth/invalid-email")) return "이메일 형식이 이상해요.";
+      if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password")) return "이메일/비밀번호가 틀렸어요.";
+      if (code.includes("auth/operation-not-allowed")) return "Firebase에서 Email/Password 로그인을 켜고 저장해야 해요.";
+      if (code.includes("auth/unauthorized-domain")) return "Firebase Authorized domains에 GitHub Pages 도메인을 추가해야 해요.";
+      return code || (e?.message || "알 수 없는 오류");
+    }
+  </script>
+</body>
+</html>
